@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Cushman
+Description=Cushman infotainment boot splash (Runge Engineering)
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/cushman
+ScriptFile=/usr/share/plymouth/themes/cushman/cushman.script
