@@ -19,11 +19,12 @@ ExecStart=/usr/bin/python3 main.py
 Environment=CAN_BACKEND=real
 Environment=BATTERY_BACKEND=real
 
-# --- Qt direkt auf den Framebuffer, kein Desktop ---
-Environment=QT_QPA_PLATFORM=eglfs
-Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
-# Cursor ausblenden (Touch-Bedienung):
-Environment=QT_QPA_EGLFS_HIDECURSOR=1
+# --- Qt direkt auf den Framebuffer (/dev/fb0), kein Desktop, kein X11 ---
+# linuxfb statt eglfs: Das PySide6-Wheel liefert kein nutzbares eglfs_kms
+# (libQt6EglFsKmsGbmSupport fehlt). Fuer das QPainter-basierte Cockpit ist
+# linuxfb voellig ausreichend (reine 2D-Anzeige). ":nocursor" blendet den
+# Mauszeiger aus (Touch-Bedienung).
+Environment=QT_QPA_PLATFORM=linuxfb:nocursor
 # Falls der Touch nicht automatisch erkannt wird, hier das evdev-Geraet setzen:
 # Environment=QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=/dev/input/event0
 

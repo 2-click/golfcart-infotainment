@@ -52,9 +52,19 @@ echo "$line" > "$CMDLINE"
 echo "[2/4] cmdline.txt aktualisiert:"
 echo "      $line"
 
-# --- Plymouth + Theme ------------------------------------------------------
-echo "[3/4] Plymouth installieren und Theme setzen ..."
+# --- Qt-Runtime-Libs (linuxfb) + Plymouth + Theme --------------------------
+echo "[3/4] Qt-Runtime-Libs, Plymouth und Theme einrichten ..."
 export DEBIAN_FRONTEND=noninteractive
+
+# Das PySide6-Wheel bringt Qt mit, aber NICHT diese System-Libs. Ohne sie
+# startet die UI nicht (z.B. ImportError libGL.so.1). Geprueft auf Pi OS Lite
+# (Debian 13). Reihenfolge: GL/EGL, Framebuffer/DRM, Eingabe (evdev/Touch),
+# Schrift (Theme nutzt "Ubuntu"/"Ubuntu Mono").
+apt-get install -y \
+  libgl1 libglx-mesa0 libegl1 libgles2 libgbm1 libdrm2 \
+  libinput10 libudev1 libmtdev1 libevdev2 libxkbcommon0 \
+  fontconfig fonts-ubuntu >/dev/null
+
 apt-get install -y plymouth plymouth-themes >/dev/null
 
 DEST=/usr/share/plymouth/themes/cushman
@@ -71,13 +81,19 @@ if command -v update-initramfs >/dev/null 2>&1; then
 fi
 echo "    = Theme 'cushman' als Standard gesetzt"
 
-# --- systemd-Service -------------------------------------------------------
-echo "[4/4] systemd-Service installieren ..."
+# --- systemd-Services (Produktiv + Test) -----------------------------------
+echo "[4/4] systemd-Services installieren ..."
 install -m 0644 "$HERE/cushman-infotainment.service" \
         /etc/systemd/system/cushman-infotainment.service
+install -m 0644 "$HERE/cushman-infotainment-test.service" \
+        /etc/systemd/system/cushman-infotainment-test.service
 systemctl daemon-reload
+# Nur die Produktiv-Unit startet beim Boot. Die Test-Unit (Mock-Backends,
+# Restart=no) wird ausschliesslich manuell gestartet und teilt sich per
+# Conflicts= den Framebuffer mit der Produktiv-Unit.
 systemctl enable cushman-infotainment.service >/dev/null
 echo "    = cushman-infotainment.service aktiviert (startet beim Boot)"
+echo "    = cushman-infotainment-test.service installiert (manueller Start)"
 
 cat <<'DONE'
 
@@ -91,6 +107,12 @@ Fertig. Vor dem Neustart pruefen:
 Testen ohne Reboot:
   sudo systemctl start cushman-infotainment.service
   journalctl -u cushman-infotainment.service -f
+
+Schneller Test-Loop (Mock, Vordergrund, Live-Ausgabe, stellt Produktiv wieder her):
+  sudo bash deploy/test.sh
+  # oder als Service (Mock, Restart=no):
+  sudo systemctl start cushman-infotainment-test
+  journalctl -u cushman-infotainment-test -f
 
 Splash vorab ansehen:
   sudo plymouthd ; sudo plymouth show-splash ; sleep 3 ; sudo plymouth quit

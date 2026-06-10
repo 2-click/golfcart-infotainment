@@ -1,0 +1,34 @@
+[Unit]
+Description=Cushman Infotainment UI -- TEST/Mock (linuxfb)
+# Teilt sich den Framebuffer mit der Produktiv-Unit -> die beiden duerfen nie
+# gleichzeitig laufen. Conflicts stoppt automatisch die jeweils andere Unit.
+Conflicts=cushman-infotainment.service
+After=multi-user.target systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+SupplementaryGroups=video render input
+
+WorkingDirectory=/home/pi/golfcart-infotainment
+ExecStart=/usr/bin/python3 main.py
+
+# --- Mock-Backends: keine CAN-/SPI-Hardware noetig ---
+Environment=CAN_BACKEND=mock
+Environment=BATTERY_BACKEND=mock
+
+# --- Gleicher Anzeigepfad wie Produktiv (linuxfb auf /dev/fb0) ---
+# Cursor hier bewusst sichtbar lassen (Test mit Maus/Touch bequemer):
+Environment=QT_QPA_PLATFORM=linuxfb
+
+# Beim Testen NICHT neu starten -> ein Crash bleibt unten und der Traceback
+# ist im Journal lesbar (journalctl -u cushman-infotainment-test -f).
+Restart=no
+
+# Plymouth-Splash abloesen, falls noch aktiv:
+ExecStartPost=/bin/sh -c 'plymouth quit --retain-splash 2>/dev/null || true'
+
+# Bewusst KEIN [Install]-Abschnitt: Diese Unit wird nicht beim Boot aktiviert,
+# sondern nur manuell gestartet (systemctl start cushman-infotainment-test).
