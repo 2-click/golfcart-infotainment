@@ -1,0 +1,38 @@
+[Unit]
+Description=Cushman Infotainment UI (PySide6 / eglfs)
+# Erst starten, wenn das Basissystem oben ist. Kein Display-Manager noetig --
+# Qt rendert via eglfs direkt auf KMS/DRM, ohne X11/Wayland.
+After=multi-user.target systemd-udev-settle.service
+Wants=systemd-udev-settle.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+# Zugriff auf GPU/DRM (eglfs) und Eingabegeraete (evdev-Touch):
+SupplementaryGroups=video render input
+
+WorkingDirectory=/home/pi/golfcart-infotainment
+ExecStart=/usr/bin/python3 main.py
+
+# --- Reale Hardware-Backends (auf dem Pi) ---
+Environment=CAN_BACKEND=real
+Environment=BATTERY_BACKEND=real
+
+# --- Qt direkt auf den Framebuffer, kein Desktop ---
+Environment=QT_QPA_PLATFORM=eglfs
+Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms
+# Cursor ausblenden (Touch-Bedienung):
+Environment=QT_QPA_EGLFS_HIDECURSOR=1
+# Falls der Touch nicht automatisch erkannt wird, hier das evdev-Geraet setzen:
+# Environment=QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=/dev/input/event0
+
+# Plymouth-Splash erst beim ersten gezeichneten Frame abloesen -> kein
+# schwarzes Aufblitzen zwischen Boot-Splash und UI:
+ExecStartPost=/bin/sh -c 'plymouth quit --retain-splash 2>/dev/null || true'
+
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

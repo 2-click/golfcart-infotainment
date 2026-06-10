@@ -1,0 +1,32 @@
+# Cushman infotainment boot splash -- statischer, zentrierter Schriftzug.
+# Hintergrund = Cockpit-Anthrazit (#0b0e12), passend zum In-App-Splash.
+
+# Hintergrundfarbe (RGB normiert auf 0..1): 0x0b/255, 0x0e/255, 0x12/255
+Window.SetBackgroundTopColor(0.043, 0.055, 0.071);
+Window.SetBackgroundBottomColor(0.043, 0.055, 0.071);
+
+logo.image = Image("splash.png");
+
+screen_w = Window.GetWidth();
+screen_h = Window.GetHeight();
+img_w = logo.image.GetWidth();
+img_h = logo.image.GetHeight();
+
+# "Contain": kleinste Skala, damit das Bild komplett auf den Schirm passt.
+scale_x = screen_w / img_w;
+scale_y = screen_h / img_h;
+scale = scale_x;
+if (scale_y < scale_x)
+  scale = scale_y;
+
+scaled = logo.image.Scale(img_w * scale, img_h * scale);
+logo.sprite = Sprite(scaled);
+logo.sprite.SetX((screen_w - scaled.GetWidth()) / 2);
+logo.sprite.SetY((screen_h - scaled.GetHeight()) / 2);
+logo.sprite.SetZ(100);
+
+# Optionaler Fortschritts-Hook: bewusst leer gelassen -- ruhiger, statischer
+# Splash ohne blinkende Elemente (production-like).
+fun refresh_callback() {
+}
+Plymouth.SetRefreshFunction(refresh_callback);
