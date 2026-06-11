@@ -20,6 +20,7 @@ from PySide6.QtGui import (QPixmap, QImage, QPainter, QColor, QBrush, QPen, QFon
 from PySide6.QtWidgets import QWidget
 
 import config
+from core import netinfo
 from . import theme
 
 ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets")
@@ -74,6 +75,12 @@ class CartView(QWidget):
         self.blink = blink
         self.setFixedSize(config.CART_AREA, config.CART_AREA)
 
+        # IPv4-Anzeige im Admin-Modus (Ethernet/WLAN). Wird per Timer aktuell
+        # gehalten und nur gemalt, wenn der Admin-Modus aktiv ist.
+        self._ips: dict[str, str] = {}
+        self._ip_timer = QTimer(self)
+        self._ip_timer.timeout.connect(self._refresh_ips)
+
         # Versteckter 5-Klick-Trigger.
         self._click_count = 0
         self._click_timer = QTimer(self)
@@ -125,9 +132,19 @@ class CartView(QWidget):
         self.adminChanged.emit(on)
         if on:
             self._show_rainbow()
+            self._refresh_ips()       # sofort fuellen, dann periodisch
+            self._ip_timer.start(5000)
         else:
             self._hide_rainbow()
+            self._ip_timer.stop()
+            self._ips = {}
         self.update()
+
+    def _refresh_ips(self):
+        ips = netinfo.ipv4_addresses()
+        if ips != self._ips:
+            self._ips = ips
+            self.update()
 
     def is_admin(self) -> bool:
         return self._admin
@@ -237,6 +254,10 @@ class CartView(QWidget):
                     cy = target.top() + py * scale
                     self._draw_glow(painter, cx, cy, radius * scale, color, soft)
 
+        # --- Admin: IPv4-Adressen unter dem Cart anzeigen (nur wenn vorhanden) ---
+        if self._admin and self._ips:
+            self._draw_ip_overlay(painter, target)
+
         # --- Kalibrier-Overlay (temporaer) ---
         if self._calibrate:
             self._draw_calibration(painter, target, base)
@@ -245,6 +266,40 @@ class CartView(QWidget):
         if self._rainbow_on:
             self._draw_rainbow_outline(painter, target)
         painter.end()
+
+    def _draw_ip_overlay(self, painter, target):
+        """Zeigt die aktuellen IPv4-Adressen (Ethernet/WLAN) zentriert unter
+        dem Cart. Label links, Adresse rechts; fehlt eine Adresse -> '--'."""
+        rows = [("ETH", self._ips.get("eth")), ("WIFI", self._ips.get("wifi"))]
+        painter.save()
+        painter.setFont(theme.mono(13))
+        fm = painter.fontMetrics()
+        line_h = fm.height() + 4
+        # Box-Breite an laengster Zeile (Label + Abstand + Adresse) ausrichten.
+        widest = max(fm.horizontalAdvance(f"{lab}    {ip or '--'}")
+                     for lab, ip in rows)
+        pad = 12
+        box_w = widest + 2 * pad
+        box_h = line_h * len(rows) + 2 * pad
+        cx = self.width() / 2
+        # Unter dem Cart platzieren, aber sicher im Widget halten.
+        top = min(target.bottom() + 16, self.height() - box_h - 8)
+        box = QRectF(cx - box_w / 2, top, box_w, box_h)
+
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(QColor(0, 0, 0, 150)))
+        painter.drawRoundedRect(box, 8, 8)
+
+        inner_w = box_w - 2 * pad
+        y = top + pad
+        for lab, ip in rows:
+            cell = QRectF(box.left() + pad, y, inner_w, line_h)
+            painter.setPen(theme.TEXT_DIM)
+            painter.drawText(cell, Qt.AlignLeft | Qt.AlignVCenter, lab)
+            painter.setPen(theme.ICE if ip else theme.TEXT_FAINT)
+            painter.drawText(cell, Qt.AlignRight | Qt.AlignVCenter, ip or "--")
+            y += line_h
+        painter.restore()
 
     def _ensure_cart_scaled(self, tw, th):
         c = self._cart_scaled
