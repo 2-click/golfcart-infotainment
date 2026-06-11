@@ -5,7 +5,10 @@ gluehende Akzente) mit Retro-Note (warmes Bernstein als Primaerfarbe, analoges
 Rundinstrument, dezente digitale Mono-Ziffern).
 """
 
-from PySide6.QtGui import QColor, QFont
+import random
+
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QFont, QImage, QPixmap, QPainter
 
 # --- Farbpalette ----------------------------------------------------------
 BG_DEEP = QColor("#0b0e12")     # Hintergrund ganz hinten (fast schwarz)
@@ -65,6 +68,44 @@ def sans(size: int, weight=QFont.Normal) -> QFont:
     f = QFont(SANS_FAMILY, size, weight)
     f.setStyleHint(QFont.SansSerif)
     return f
+
+
+# --- Dithering ------------------------------------------------------------
+# Das Produktionsdisplay hat eine geringe Farbtiefe (vermutlich RGB565/18 Bit).
+# Weiche Verlaeufe zeigen darauf sichtbares Banding (harte Stufen), waehrend
+# sie auf einem 24-Bit-Laptop sauber aussehen. Gegenmittel: ein feines,
+# statisches Rauschen ueber die Verlaufsflaeche legen. Das Display kann zwar
+# weiterhin nur wenige Farben, aber das Auge mittelt das Rauschen -> die
+# Stufenkanten verschwimmen. Klassisches Ordered-/Noise-Dithering.
+_DITHER_TILE = None
+
+
+def _dither_tile() -> QPixmap:
+    """Einmalig erzeugte, gekachelte Rausch-Textur (deterministisch)."""
+    global _DITHER_TILE
+    if _DITHER_TILE is None:
+        size = 64
+        amp = 12  # max. Alpha -> Staerke der Stoerung (klein = unsichtbar)
+        img = QImage(size, size, QImage.Format_ARGB32)
+        rnd = random.Random(0xC05CA47)  # fester Seed -> kein Flimmern/Reproduzierbar
+        for y in range(size):
+            for x in range(size):
+                # Zufaellig heller oder dunkler Punkt mit kleiner Deckkraft.
+                v = 255 if rnd.random() < 0.5 else 0
+                a = rnd.randint(0, amp)
+                img.setPixelColor(x, y, QColor(v, v, v, a))
+        _DITHER_TILE = QPixmap.fromImage(img)
+    return _DITHER_TILE
+
+
+def dither(painter: QPainter, rect) -> None:
+    """Legt das Dither-Rauschen ueber rect. Direkt NACH dem Zeichnen eines
+    grossen Verlaufs aufrufen, bevor scharfe Inhalte (PNG/Text) darueber
+    kommen -- die bleiben dann knackig, nur der Verlauf wird entbandet."""
+    painter.save()
+    painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+    painter.drawTiledPixmap(rect, _dither_tile())
+    painter.restore()
 
 
 # --- Globales Stylesheet --------------------------------------------------

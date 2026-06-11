@@ -22,7 +22,7 @@ SUBTITLE = "RUNGE ENGINEERING"
 class SplashScreen(QWidget):
     finished = Signal()
 
-    SWEEPS = 2            # Anzahl Lichtstreifen-Durchlaeufe vor dem Ausblenden
+    SWEEPS = 1            # Anzahl Lichtstreifen-Durchlaeufe vor dem Ausblenden
     FADE_MS = 600         # Dauer des Ausblendens
     SWEEP_STEP = 0.013    # Fortschritt des Lichtstreifens pro Frame
 
@@ -78,6 +78,7 @@ class SplashScreen(QWidget):
         bg.setColorAt(0.0, theme.BG_PANEL)
         bg.setColorAt(1.0, theme.BG_DEEP)
         p.fillRect(self.rect(), QBrush(bg))
+        theme.dither(p, self.rect())  # Banding auf dem Produktionsdisplay aufbrechen
 
         path = self._logo_path()
         rect = path.boundingRect()

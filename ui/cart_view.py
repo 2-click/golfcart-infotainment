@@ -193,6 +193,10 @@ class CartView(QWidget):
         painter.setBrush(QBrush(rg))
         painter.drawRect(self.rect())
 
+        # Banding des grossen Backdrop-Verlaufs auf dem Produktionsdisplay
+        # aufbrechen. Vor dem Cart-PNG -> das PNG bleibt scharf.
+        theme.dither(painter, self.rect())
+
         base = self._pixmaps.get("cart_base")
 
         # --- Bodenreflexion (gespiegelte Base, ausgeblendet) ---
