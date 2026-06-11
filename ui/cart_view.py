@@ -37,9 +37,8 @@ LAYER_ORDER = [
 # Front-Lichtcluster: je Cluster sitzen Scheinwerfer UND Blinker am selben Punkt.
 HEADLIGHT_RIGHT = (863, 635)
 HEADLIGHT_LEFT = (1074, 596)
-# Arbeitsscheinwerfer: zwei Spots auf der Dachvorderkante.
-WORKLIGHT_RIGHT = (754, 119)
-WORKLIGHT_LEFT = (954, 137)
+# Arbeitsscheinwerfer: ein Spot mittig auf der Dachvorderkante.
+WORKLIGHT_CENTER = (854, 128)
 
 # Enden des Warnbalkens -> zusaetzlicher weicher Glow beim Blitzen (das
 # beacon.png-Asset bleibt; der Glow legt nur einen Schein darueber).
@@ -50,10 +49,10 @@ BEACON_GLOW_PTS = [(732, 40), (914, 59)]
 # weicher Schein ohne hellen Kern (fuer den Warnbalken, der schon leuchtet).
 # Reihenfolge = Zeichenreihenfolge (spaetere liegen oben).
 GLOW_LIGHTS = [
-    ("day_lights",    [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#eef4ff"), 55, False),
-    ("low_beam",      [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#ffce4d"), 92, False),
-    ("high_beam",     [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#dfeaff"), 112, False),
-    ("work_light",    [WORKLIGHT_RIGHT, WORKLIGHT_LEFT], QColor("#ffd08a"), 90, False),
+    ("day_lights",    [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#f4f8ff"), 48, False),
+    ("low_beam",      [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#f4f8ff"), 100, False),
+    ("high_beam",     [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#3d7bff"), 132, False),
+    ("work_light",    [WORKLIGHT_CENTER],                 QColor("#ffd08a"), 90, False),
     ("blinker_right", [HEADLIGHT_RIGHT],                 QColor("#ff9b1a"), 80, False),
     ("blinker_left",  [HEADLIGHT_LEFT],                  QColor("#ff9b1a"), 80, False),
     ("beacon",        BEACON_GLOW_PTS,                   QColor("#ff8a1e"), 85, True),
