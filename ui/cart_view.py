@@ -52,7 +52,7 @@ BEACON_GLOW_PTS = [(732, 40), (914, 59)]
 GLOW_LIGHTS = [
     ("day_lights",    [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#f4f8ff"), 48, False),
     ("low_beam",      [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#f4f8ff"), 100, False),
-    ("high_beam",     [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#3d7bff"), 132, False),
+    ("high_beam",     [HEADLIGHT_RIGHT, HEADLIGHT_LEFT], QColor("#bcd6ff"), 132, False),
     ("work_light",    [WORKLIGHT_CENTER],                 QColor("#ffd08a"), 90, False),
     ("blinker_right", [HEADLIGHT_RIGHT],                 QColor("#ff9b1a"), 80, False),
     ("blinker_left",  [HEADLIGHT_LEFT],                  QColor("#ff9b1a"), 80, False),
