@@ -5,9 +5,6 @@ gluehende Akzente) mit Retro-Note (warmes Bernstein als Primaerfarbe, analoges
 Rundinstrument, dezente digitale Mono-Ziffern).
 """
 
-import random
-
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QImage, QPixmap, QPainter
 
 # --- Farbpalette ----------------------------------------------------------
@@ -76,37 +73,56 @@ def sans(size: int, weight=QFont.Normal) -> QFont:
 # sie auf einem 24-Bit-Laptop sauber aussehen. Gegenmittel: ein feines,
 # statisches Rauschen ueber die Verlaufsflaeche legen. Das Display kann zwar
 # weiterhin nur wenige Farben, aber das Auge mittelt das Rauschen -> die
-# Stufenkanten verschwimmen. Klassisches Noise-Dithering.
+# Stufenkanten verschwimmen.
 #
-# WICHTIG zur Staerke: damit das Rauschen eine Banding-Kante wirklich
-# aufbricht, muss ein Punkt hell genug sein, um den Pixel ueber EINE
-# darstellbare Stufe des Panels zu heben. Bei RGB565 ist das R/B-Raster ~8
-# (von 256) -> auf den dunklen Cockpit-Verlaeufen (Pixelwert ~20) braucht ein
-# weisser Punkt also Alpha ~10+ ((255-20)*a/255 >= 8 -> a >= 9). Mit zu kleinem
-# Alpha bleibt das Banding sichtbar. Default daher bewusst hoch; auf dem echten
-# Panel ueber DITHER_AMP feinjustieren (zu hoch -> sichtbares Korn).
-DITHER_AMP = 26
+# Methode: GEORDNETES Dithering (Bayer-Matrix), KEIN Zufallsrauschen. Zufalls-
+# rauschen, das stark genug ist, um eine Bandkante aufzubrechen, sieht immer wie
+# TV-Schnee aus. Das Bayer-Muster verteilt helle/dunkle Punkte regelmaessig, das
+# Auge mittelt es zu einem glatten Halbton -> Banding weg, aber kaum sichtbar.
+#
+# DITHER_AMP = Spanne der Stoerung (Alpha, Spitze hell wie dunkel). Klein halten:
+# es muss nur ~eine Panel-Stufe ueberbruecken. Auf dem echten Panel justieren --
+# hoeher, wenn noch Banding sichtbar; niedriger, wenn das Muster auffaellt.
+DITHER_AMP = 14
 _DITHER_TILE = None
 
 
-def _dither_tile() -> QPixmap:
-    """Einmalig erzeugte, gekachelte Rausch-Textur (deterministisch).
+def _bayer(n: int) -> list:
+    """Rekursive Bayer-Schwellenmatrix (n = Zweierpotenz), Werte 0..n*n-1."""
+    if n == 1:
+        return [[0]]
+    h = _bayer(n // 2)
+    m = n // 2
+    out = [[0] * n for _ in range(n)]
+    for y in range(m):
+        for x in range(m):
+            v = h[y][x] * 4
+            out[y][x] = v + 0
+            out[y][x + m] = v + 2
+            out[y + m][x] = v + 3
+            out[y + m][x + m] = v + 1
+    return out
 
-    Jeder Pixel bekommt Rauschen (volle Dichte), zufaellig hell oder dunkel.
-    Auf dunklem Grund wirken vor allem die hellen Punkte (dunkel kann kaum
-    weiter nach unten) -> sie heben ~50 % der Pixel ueber die naechste
-    Panel-Stufe und loesen so die harte Bandkante in einen Dither auf."""
+
+def _dither_tile() -> QPixmap:
+    """Einmalig erzeugte, gekachelte Bayer-Dither-Textur.
+
+    Pro Pixel ein signierter Versatz aus der Bayer-Matrix: helle Punkte heben,
+    dunkle senken -- mit zur Matrix-Position glatt steigender Deckkraft. Die
+    Mitte (Schwelle ~0,5) bleibt fast transparent. Ergebnis ist ein feines,
+    regelmaessiges Halbton statt Schnee."""
     global _DITHER_TILE
     if _DITHER_TILE is None:
-        size = 64
+        n = 8
+        mat = _bayer(n)
         amp = DITHER_AMP
-        lo = max(1, amp // 3)  # Mindest-Alpha -> jeder Pixel traegt bei
-        img = QImage(size, size, QImage.Format_ARGB32)
-        rnd = random.Random(0xC05CA47)  # fester Seed -> kein Flimmern/Reproduzierbar
-        for y in range(size):
-            for x in range(size):
-                v = 255 if rnd.random() < 0.5 else 0
-                a = rnd.randint(lo, amp)
+        img = QImage(n, n, QImage.Format_ARGB32)
+        for y in range(n):
+            for x in range(n):
+                th = (mat[y][x] + 0.5) / (n * n)   # 0..1
+                off = th - 0.5                      # -0.5..0.5
+                v = 255 if off >= 0 else 0          # hell hebt, dunkel senkt
+                a = round(abs(off) * 2 * amp)       # 0..amp
                 img.setPixelColor(x, y, QColor(v, v, v, a))
         _DITHER_TILE = QPixmap.fromImage(img)
     return _DITHER_TILE
