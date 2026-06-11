@@ -8,7 +8,7 @@ grosse digitale Mono-Ziffer in der Mitte.
 import math
 
 from PySide6.QtCore import Qt, QRectF, QPointF, QTimer, Signal
-from PySide6.QtGui import (QPainter, QColor, QPen, QBrush, QRadialGradient,
+from PySide6.QtGui import (QPainter, QColor, QPen, QBrush,
                            QConicalGradient, QFont)
 from PySide6.QtWidgets import QWidget
 
@@ -68,13 +68,11 @@ class SpeedGauge(QWidget):
         R = side / 2 - 6
         face = QRectF(cx - R, cy - R, 2 * R, 2 * R)
 
-        # --- Face: Radialgradient fuer Tiefe ---
-        rg = QRadialGradient(cx, cy - R * 0.15, R * 1.15)
-        rg.setColorAt(0.0, theme.BG_ELEVATED)
-        rg.setColorAt(0.7, theme.BG_PANEL)
-        rg.setColorAt(1.0, theme.BG_DEEP)
+        # --- Face: flache Fuellung (kein Verlauf -- bandet auf dem Display).
+        #     Tiefe entsteht stattdessen durch flache Ton-Abstufung zwischen
+        #     Face (dunkler) und Hub (heller) plus die Ringkonturen. ---
         p.setPen(Qt.NoPen)
-        p.setBrush(QBrush(rg))
+        p.setBrush(QBrush(theme.BG_PANEL))
         p.drawEllipse(face)
 
         # Aeusserer Ring
@@ -150,11 +148,9 @@ class SpeedGauge(QWidget):
         # Radius so, dass zwischen Skalenring und Zahl ein klarer Ring frei
         # bleibt; Nadel/Bogen enden ausserhalb dieser Scheibe.
         hub_r = R * 0.50
-        hub_grad = QRadialGradient(cx, cy - hub_r * 0.25, hub_r * 1.1)
-        hub_grad.setColorAt(0.0, theme.BG_ELEVATED)
-        hub_grad.setColorAt(1.0, theme.BG_DEEP)
+        # Flache Fuellung, etwas heller als das Face -> dezente Tiefe ohne Verlauf.
         p.setPen(Qt.NoPen)
-        p.setBrush(QBrush(hub_grad))
+        p.setBrush(QBrush(theme.BG_ELEVATED))
         p.drawEllipse(QPointF(cx, cy), hub_r, hub_r)
         p.setPen(QPen(theme.STROKE, 1.5))
         p.setBrush(Qt.NoBrush)

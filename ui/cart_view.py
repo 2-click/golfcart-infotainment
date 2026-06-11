@@ -16,7 +16,7 @@ import os
 
 from PySide6.QtCore import Qt, QRect, QRectF, QPointF, QTimer, Signal
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QColor, QBrush, QPen, QFont,
-                           QRadialGradient, QLinearGradient, QConicalGradient)
+                           QRadialGradient, QConicalGradient)
 from PySide6.QtWidgets import QWidget
 
 import config
@@ -204,26 +204,6 @@ class CartView(QWidget):
         painter.fillRect(self.rect(), theme.BG_PANEL)
 
         base = self._pixmaps.get("cart_base")
-
-        # --- Bodenreflexion (gespiegelte Base, ausgeblendet) ---
-        if base is not None and not base.isNull():
-            refl_h = int(target.height() * 0.34)
-            painter.save()
-            painter.setOpacity(0.18)
-            # Spiegeln an der Unterkante des Carts.
-            painter.translate(0, 2 * target.bottom())
-            painter.scale(1, -1)
-            painter.drawPixmap(target, base)
-            painter.restore()
-            # Reflexion nach unten weich ausblenden -- Endfarbe = Hintergrund,
-            # damit die Reflexion sauber im flachen BG_PANEL verschwindet.
-            fade = QLinearGradient(0, target.bottom(), 0, target.bottom() + refl_h)
-            c0 = QColor(theme.BG_PANEL); c0.setAlpha(0)
-            fade.setColorAt(0.0, c0)
-            fade.setColorAt(1.0, theme.BG_PANEL)
-            painter.setBrush(QBrush(fade))
-            painter.setPen(Qt.NoPen)
-            painter.drawRect(QRectF(0, target.bottom(), self.width(), refl_h + 2))
 
         # --- Layer-Stack (Base + sichtbare Lichter) ---
         for name in LAYER_ORDER:
