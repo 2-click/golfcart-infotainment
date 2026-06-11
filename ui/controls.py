@@ -12,7 +12,8 @@ dem IST-Status der SPS.
 """
 
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import (QPainter, QColor, QPen, QBrush, QFont, QLinearGradient)
+from PySide6.QtGui import (QPainter, QColor, QPen, QBrush, QFont, QLinearGradient,
+                           QPainterPath)
 from PySide6.QtWidgets import QWidget, QGridLayout, QAbstractButton
 
 from . import theme, icons
@@ -90,6 +91,15 @@ class ControlButton(QAbstractButton):
         p.setPen(QPen(border, 2 if on else 1))
         p.setBrush(QBrush(grad))
         p.drawRoundedRect(r, 16, 16)
+
+        # Banding des Flaechen-Verlaufs auf dem Panel aufbrechen -- auf die
+        # runde Kachelflaeche begrenzt, vor Icon/Text -> die bleiben scharf.
+        clip = QPainterPath()
+        clip.addRoundedRect(r, 16, 16)
+        p.save()
+        p.setClipPath(clip)
+        theme.dither(p, r.toRect())
+        p.restore()
 
         if pressed and not on:
             p.setPen(Qt.NoPen)
