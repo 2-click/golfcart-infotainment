@@ -16,8 +16,9 @@ from PIL import Image, ImageDraw, ImageFont
 # --- Geometrie / Farben (gespiegelt aus ui/theme.py) ----------------------
 W, H = 1600, 600
 BG_DEEP = (11, 14, 18)          # #0b0e12
-AMBER = (255, 158, 44)          # #ff9e2c
-AMBER_HI = (255, 192, 97)       # #ffc061 -- Glanzkante
+LOGO_FILL = (238, 243, 248)     # #eef3f8 -- weisser Schriftzug
+LOGO_HI = (255, 255, 255)       # reines Weiss -- Glanzkante
+LOGO_SHADOW = (34, 40, 48)      # neutraler dunkler Schatten (etwas Tiefe)
 TEXT_DIM = (120, 132, 145)      # #788491 -- Subline
 
 LOGO = "CUSHMAN"
@@ -53,13 +54,13 @@ def main():
     img = Image.new("RGB", (W, H), BG_DEEP)
     d = ImageDraw.Draw(img)
 
-    # Logo: leichte Tiefe durch versetzte dunklere Kopie, dann amberner Schriftzug
+    # Logo: leichte Tiefe durch versetzte dunklere Kopie, dann weisser Schriftzug
     logo_font = _font(150, weight=800)
     cy = H * 0.46
-    _centered(d, LOGO, logo_font, cy + 3, (90, 56, 14), tracking=8)   # Schatten
-    _centered(d, LOGO, logo_font, cy, AMBER, tracking=8)
+    _centered(d, LOGO, logo_font, cy + 3, LOGO_SHADOW, tracking=8)   # Schatten
+    _centered(d, LOGO, logo_font, cy, LOGO_FILL, tracking=8)
     # dezente Glanzkante oben
-    _centered(d, LOGO, logo_font, cy - 2, AMBER_HI, tracking=8)
+    _centered(d, LOGO, logo_font, cy - 2, LOGO_HI, tracking=8)
 
     # Subline
     sub_font = _font(40, weight=600)
