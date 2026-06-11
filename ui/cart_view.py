@@ -199,20 +199,9 @@ class CartView(QWidget):
         painter.setRenderHint(QPainter.Antialiasing, True)
         target = self._target_rect()
 
-        # --- Spotlight-Backdrop: radialer Schein hinter dem Cart ---
-        cx = self.width() / 2
-        cy = target.center().y() - target.height() * 0.05
-        rg = QRadialGradient(cx, cy, self.width() * 0.62)
-        rg.setColorAt(0.0, theme.BG_HILITE)
-        rg.setColorAt(0.55, theme.BG_PANEL)
-        rg.setColorAt(1.0, theme.BG_DEEP)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QBrush(rg))
-        painter.drawRect(self.rect())
-
-        # Banding des grossen Backdrop-Verlaufs auf dem Produktionsdisplay
-        # aufbrechen. Vor dem Cart-PNG -> das PNG bleibt scharf.
-        theme.dither(painter, self.rect())
+        # --- Hintergrund hinter dem Cart (flache Fuellung -- bewusst kein
+        #     Verlauf, das bandet auf dem Produktionsdisplay) ---
+        painter.fillRect(self.rect(), theme.BG_PANEL)
 
         base = self._pixmaps.get("cart_base")
 
@@ -226,11 +215,12 @@ class CartView(QWidget):
             painter.scale(1, -1)
             painter.drawPixmap(target, base)
             painter.restore()
-            # Reflexion nach unten weich ausblenden.
+            # Reflexion nach unten weich ausblenden -- Endfarbe = Hintergrund,
+            # damit die Reflexion sauber im flachen BG_PANEL verschwindet.
             fade = QLinearGradient(0, target.bottom(), 0, target.bottom() + refl_h)
             c0 = QColor(theme.BG_PANEL); c0.setAlpha(0)
             fade.setColorAt(0.0, c0)
-            fade.setColorAt(1.0, theme.BG_DEEP)
+            fade.setColorAt(1.0, theme.BG_PANEL)
             painter.setBrush(QBrush(fade))
             painter.setPen(Qt.NoPen)
             painter.drawRect(QRectF(0, target.bottom(), self.width(), refl_h + 2))

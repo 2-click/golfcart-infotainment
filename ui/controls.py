@@ -12,8 +12,7 @@ dem IST-Status der SPS.
 """
 
 from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import (QPainter, QColor, QPen, QBrush, QFont, QLinearGradient,
-                           QPainterPath)
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont
 from PySide6.QtWidgets import QWidget, QGridLayout, QAbstractButton
 
 from . import theme, icons
@@ -72,34 +71,22 @@ class ControlButton(QAbstractButton):
             p.setBrush(QBrush(glow))
             p.drawRoundedRect(r.adjusted(-2, -2, 2, 2), 18, 18)
 
-        # --- Flaeche (vertikaler Gradient fuer Tiefe) ---
-        grad = QLinearGradient(r.topLeft(), r.bottomLeft())
+        # --- Flaeche (flache Fuellung -- bewusst kein Verlauf, das bandet auf
+        #     dem Produktionsdisplay) ---
         if on:
-            grad.setColorAt(0.0, _mix(self._accent, theme.BG_DEEP, 0.62))
-            grad.setColorAt(1.0, _mix(self._accent, theme.BG_DEEP, 0.80))
+            fill = _mix(self._accent, theme.BG_DEEP, 0.70)
             border = self._accent
             icon_color = QColor("#11151b")  # dunkel auf hellem Akzent
             text_color = QColor("#0e1217")
         else:
-            top = theme.BG_HILITE if pressed else theme.BG_ELEVATED
-            grad.setColorAt(0.0, top)
-            grad.setColorAt(1.0, theme.BG_PANEL)
+            fill = theme.BG_HILITE if pressed else theme.BG_ELEVATED
             border = theme.STROKE
             icon_color = _mix(self._accent, theme.BG_DEEP, 0.35)
             text_color = theme.TEXT_DIM
 
         p.setPen(QPen(border, 2 if on else 1))
-        p.setBrush(QBrush(grad))
+        p.setBrush(QBrush(fill))
         p.drawRoundedRect(r, 16, 16)
-
-        # Banding des Flaechen-Verlaufs auf dem Panel aufbrechen -- auf die
-        # runde Kachelflaeche begrenzt, vor Icon/Text -> die bleiben scharf.
-        clip = QPainterPath()
-        clip.addRoundedRect(r, 16, 16)
-        p.save()
-        p.setClipPath(clip)
-        theme.dither(p, r.toRect())
-        p.restore()
 
         if pressed and not on:
             p.setPen(Qt.NoPen)

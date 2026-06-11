@@ -73,12 +73,9 @@ class SplashScreen(QWidget):
         p.setRenderHint(QPainter.Antialiasing, True)
         p.setRenderHint(QPainter.TextAntialiasing, True)
 
-        # Hintergrund (vertikaler Verlauf wie im Cockpit)
-        bg = QLinearGradient(0, 0, 0, self.height())
-        bg.setColorAt(0.0, theme.BG_PANEL)
-        bg.setColorAt(1.0, theme.BG_DEEP)
-        p.fillRect(self.rect(), QBrush(bg))
-        theme.dither(p, self.rect())  # Banding auf dem Produktionsdisplay aufbrechen
+        # Hintergrund (flache Fuellung -- bewusst kein Verlauf, das bandet auf
+        # dem Produktionsdisplay)
+        p.fillRect(self.rect(), theme.BG_DEEP)
 
         path = self._logo_path()
         rect = path.boundingRect()

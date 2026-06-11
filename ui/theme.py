@@ -5,7 +5,7 @@ gluehende Akzente) mit Retro-Note (warmes Bernstein als Primaerfarbe, analoges
 Rundinstrument, dezente digitale Mono-Ziffern).
 """
 
-from PySide6.QtGui import QColor, QFont, QImage, QPixmap, QPainter
+from PySide6.QtGui import QColor, QFont
 
 # --- Farbpalette ----------------------------------------------------------
 BG_DEEP = QColor("#0b0e12")     # Hintergrund ganz hinten (fast schwarz)
@@ -65,80 +65,6 @@ def sans(size: int, weight=QFont.Normal) -> QFont:
     f = QFont(SANS_FAMILY, size, weight)
     f.setStyleHint(QFont.SansSerif)
     return f
-
-
-# --- Dithering ------------------------------------------------------------
-# Das Produktionsdisplay hat eine geringe Farbtiefe (vermutlich RGB565/18 Bit).
-# Weiche Verlaeufe zeigen darauf sichtbares Banding (harte Stufen), waehrend
-# sie auf einem 24-Bit-Laptop sauber aussehen. Gegenmittel: ein feines,
-# statisches Rauschen ueber die Verlaufsflaeche legen. Das Display kann zwar
-# weiterhin nur wenige Farben, aber das Auge mittelt das Rauschen -> die
-# Stufenkanten verschwimmen.
-#
-# Methode: GEORDNETES Dithering (Bayer-Matrix), KEIN Zufallsrauschen. Zufalls-
-# rauschen, das stark genug ist, um eine Bandkante aufzubrechen, sieht immer wie
-# TV-Schnee aus. Das Bayer-Muster verteilt helle/dunkle Punkte regelmaessig, das
-# Auge mittelt es zu einem glatten Halbton -> Banding weg, aber kaum sichtbar.
-#
-# DITHER_AMP = Spanne der Stoerung (Alpha, Spitze hell wie dunkel). Klein halten:
-# es muss nur ~eine Panel-Stufe ueberbruecken. Auf dem echten Panel justieren --
-# hoeher, wenn noch Banding sichtbar; niedriger, wenn das Muster auffaellt.
-DITHER_AMP = 14
-_DITHER_TILE = None
-
-
-def _bayer(n: int) -> list:
-    """Rekursive Bayer-Schwellenmatrix (n = Zweierpotenz), Werte 0..n*n-1."""
-    if n == 1:
-        return [[0]]
-    h = _bayer(n // 2)
-    m = n // 2
-    out = [[0] * n for _ in range(n)]
-    for y in range(m):
-        for x in range(m):
-            v = h[y][x] * 4
-            out[y][x] = v + 0
-            out[y][x + m] = v + 2
-            out[y + m][x] = v + 3
-            out[y + m][x + m] = v + 1
-    return out
-
-
-def _dither_tile() -> QPixmap:
-    """Einmalig erzeugte, gekachelte Bayer-Dither-Textur.
-
-    Pro Pixel ein signierter Versatz aus der Bayer-Matrix: helle Punkte heben,
-    dunkle senken -- mit zur Matrix-Position glatt steigender Deckkraft. Die
-    Mitte (Schwelle ~0,5) bleibt fast transparent. Ergebnis ist ein feines,
-    regelmaessiges Halbton statt Schnee."""
-    global _DITHER_TILE
-    if _DITHER_TILE is None:
-        n = 8
-        mat = _bayer(n)
-        amp = DITHER_AMP
-        img = QImage(n, n, QImage.Format_ARGB32)
-        for y in range(n):
-            for x in range(n):
-                th = (mat[y][x] + 0.5) / (n * n)   # 0..1
-                off = th - 0.5                      # -0.5..0.5
-                v = 255 if off >= 0 else 0          # hell hebt, dunkel senkt
-                a = round(abs(off) * 2 * amp)       # 0..amp
-                img.setPixelColor(x, y, QColor(v, v, v, a))
-        _DITHER_TILE = QPixmap.fromImage(img)
-    return _DITHER_TILE
-
-
-def dither(painter: QPainter, rect, strength: float = 1.0) -> None:
-    """Legt das Dither-Rauschen ueber rect. Direkt NACH dem Zeichnen eines
-    Verlaufs aufrufen, bevor scharfe Inhalte (PNG/Text/Icon) darueber kommen --
-    die bleiben dann knackig, nur der Verlauf wird entbandet. Fuer kleine/helle
-    Flaechen (z. B. Buttons) ggf. strength < 1.0, um Korn zu daempfen. Auf eine
-    runde Flaeche begrenzen: vorher painter.setClipPath(...) setzen."""
-    painter.save()
-    painter.setOpacity(strength)
-    painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
-    painter.drawTiledPixmap(rect, _dither_tile())
-    painter.restore()
 
 
 # --- Globales Stylesheet --------------------------------------------------
